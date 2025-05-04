@@ -9,23 +9,29 @@ import (
 )
 
 type Config struct {
-	Env  string `env:"ENV" env-default:"prod"`
-	Port int    `env:"PORT" env-default:"50055"`
-	// AuthServiceAddr string      `env:"AUTH_SERVICE_ADDR" env-required:"true"`
-	// DB              DBConfig    `env:"DB"`
+	Env   string `env:"ENV" env-default:"prod"`
+	Port  int    `env:"PORT" env-default:"50055"`
+	DB    DBConfig
+	Minio MinioConfig
 	// Redis           RedisConfig `env:"REDIS"`
 }
 
-// type DBConfig struct {
-// 	Host           string `env:"DB_HOST" env-default:"localhost"`
-// 	Port           int    `env:"DB_PORT" env-default:"5432"`
-// 	User           string `env:"DB_USER" env-default:"postgres"`
-// 	Password       string `env:"DB_PASSWORD" env-required:"true"`
-// 	Name           string `env:"DB_NAME" env-default:"comments"`
-// 	MinPools       int    `env:"DB_MIN_POOLS" env-default:"3"`
-// 	MaxPools       int    `env:"DB_MAX_POOS" env-default:"5"`
-// 	MigrationsPath string `env:"MIGRATIONS_PATH" env-default:"./migrations"`
-// }
+type DBConfig struct {
+	Host       string `env:"DB_HOST" env-default:"localhost"`
+	Port       int    `env:"DB_PORT" env-default:"27017"`
+	User       string `env:"DB_USER" env-default:"mongo"`
+	Password   string `env:"DB_PASSWORD" env-required:"true"`
+	Database   string `env:"DB_DATABASE" env-default:"users"`
+	Collection string `env:"DB_COLLECTION" env-default:"users"`
+}
+
+type MinioConfig struct {
+	Endpoint   string `env:"MINIO_ENDPOINT" env-default:"localhost:9000"`
+	User       string `env:"MINIO_ROOT_USER" env-default:"minio"`
+	Password   string `env:"MINIO_ROOT_PASSWORD" env-required:"true"`
+	BucketName string `env:"MINIO_BUCKET_NAME" env-default:"users"`
+	IsUseSsl   bool   `env:"MINIO_USE_SSL" env-default:"false"`
+}
 
 // type RedisConfig struct {
 // 	Addr     string `env:"REDIS_ADDR" env-default:"localhost:6379"`

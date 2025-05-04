@@ -75,3 +75,10 @@ func (l *Logger) With(ctx context.Context, fields ...any) context.Context {
 	}
 	return context.WithValue(ctx, Key, &Logger{log: l.log.With(fields...)})
 }
+
+func Err(err error) slog.Attr {
+	return slog.Attr{
+		Key:   "error",
+		Value: slog.StringValue(err.Error()),
+	}
+}

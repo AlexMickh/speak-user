@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/AlexMickh/speak-user/internal/app"
 	"github.com/AlexMickh/speak-user/internal/config"
 	"github.com/AlexMickh/speak-user/pkg/sl"
 )
@@ -18,4 +19,7 @@ func main() {
 	ctx = sl.New(ctx, os.Stdout, cfg.Env)
 
 	sl.GetFromCtx(ctx).Info(ctx, "logger is working", slog.String("env", cfg.Env))
+
+	app := app.Register(ctx, cfg)
+	_ = app
 }
