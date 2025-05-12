@@ -5,15 +5,17 @@ import (
 	"log/slog"
 
 	"github.com/AlexMickh/speak-user/internal/config"
+	"github.com/AlexMickh/speak-user/internal/service"
 	"github.com/AlexMickh/speak-user/internal/storage/minio"
 	"github.com/AlexMickh/speak-user/internal/storage/mongo"
 	"github.com/AlexMickh/speak-user/pkg/sl"
 )
 
 type App struct {
-	db  *mongo.Storage
-	s3  *minio.Minio
-	cfg *config.Config
+	db      *mongo.Storage
+	s3      *minio.Minio
+	cfg     *config.Config
+	service *service.Service
 }
 
 func Register(ctx context.Context, cfg *config.Config) *App {
@@ -28,7 +30,6 @@ func Register(ctx context.Context, cfg *config.Config) *App {
 	if err != nil {
 		sl.GetFromCtx(ctx).Fatal(ctx, "failed to init mongo db", sl.Err(err))
 	}
-	defer db.Close(ctx)
 
 	sl.GetFromCtx(ctx).Info(ctx, "initing minio")
 	minio, err := minio.New(ctx, cfg.Minio)
@@ -36,9 +37,17 @@ func Register(ctx context.Context, cfg *config.Config) *App {
 		sl.GetFromCtx(ctx).Fatal(ctx, "failed to init minio", sl.Err(err))
 	}
 
+	sl.GetFromCtx(ctx).Info(ctx, "initing service")
+	service := service.New(db, minio)
+
 	return &App{
-		db:  db,
-		s3:  minio,
-		cfg: cfg,
+		db:      db,
+		s3:      minio,
+		cfg:     cfg,
+		service: service,
 	}
+}
+
+func (a *App) GracefulStop(ctx context.Context) {
+	a.db.Close(ctx)
 }
