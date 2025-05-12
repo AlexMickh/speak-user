@@ -111,14 +111,14 @@ func (s *Storage) UpdateUser(
 	id uuid.UUID,
 	username string,
 	description string,
-	profileImage string,
+	profileImageUrl string,
 ) error {
 	const op = "storage.mongo.UpdateUser"
 
 	_, err := s.coll.UpdateByID(ctx, id, bson.D{
 		{Key: "username", Value: username},
 		{Key: "description", Value: description},
-		{Key: "profile_image", Value: profileImage},
+		{Key: "profile_image_url", Value: profileImageUrl},
 	})
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -127,13 +127,19 @@ func (s *Storage) UpdateUser(
 	return nil
 }
 
-func (s *Storage) DeleteUser(ctx context.Context, id uuid.UUID) error {
+func (s *Storage) DeleteUser(ctx context.Context, id uuid.UUID) (string, error) {
 	const op = "storage.mongo.DeleteUser"
 
-	_, err := s.coll.DeleteOne(ctx, bson.D{{Key: "_id", Value: id}})
+	var user models.User
+	err := s.coll.FindOne(ctx, bson.D{{Key: "_id", Value: id}}).Decode(&user)
 	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	return nil
+	_, err = s.coll.DeleteOne(ctx, bson.D{{Key: "_id", Value: id}})
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user.ProfileImageUrl, nil
 }

@@ -18,6 +18,8 @@ type Minio struct {
 	bucketName string
 }
 
+const defaultImage = "avatar.png"
+
 func New(ctx context.Context, cfg config.MinioConfig) (*Minio, error) {
 	const op = "storage.minio.New"
 
@@ -57,8 +59,17 @@ func New(ctx context.Context, cfg config.MinioConfig) (*Minio, error) {
 	}, nil
 }
 
-func (m *Minio) SaveImage(ctx context.Context, image models.Image) error {
+func (m *Minio) SaveImage(ctx context.Context, image *models.Image) (string, error) {
 	const op = "storage.minio.SaveImage"
+
+	if image == nil {
+		url, err := m.GetImageUrl(ctx, defaultImage)
+		if err != nil {
+			return "", fmt.Errorf("%s: %w", op, err)
+		}
+
+		return url, nil
+	}
 
 	reader := bytes.NewReader(image.Data)
 
@@ -71,13 +82,18 @@ func (m *Minio) SaveImage(ctx context.Context, image models.Image) error {
 		minio.PutObjectOptions{ContentType: "image/png"},
 	)
 	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	return nil
+	url, err := m.GetImageUrl(ctx, image.ID.String())
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return url, nil
 }
 
-func (m *Minio) GetImage(ctx context.Context, imageId string) (string, error) {
+func (m *Minio) GetImageUrl(ctx context.Context, imageId string) (string, error) {
 	const op = "storage.minio.GetImage"
 
 	url, err := m.mc.PresignedGetObject(ctx, m.bucketName, imageId, 5*24*time.Hour, nil)
