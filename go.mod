@@ -3,6 +3,7 @@ module github.com/AlexMickh/speak-user
 go 1.24.1
 
 require (
+	github.com/AlexMickh/speak-protos v1.1.2
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/minio/minio-go/v7 v7.0.91
 )
@@ -18,6 +19,9 @@ require (
 	github.com/rs/xid v1.6.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
+	google.golang.org/grpc v1.72.0
+	google.golang.org/protobuf v1.36.5
 )
 
 require (

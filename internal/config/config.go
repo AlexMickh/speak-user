@@ -9,10 +9,11 @@ import (
 )
 
 type Config struct {
-	Env   string `env:"ENV" env-default:"prod"`
-	Port  int    `env:"PORT" env-default:"50055"`
-	DB    DBConfig
-	Minio MinioConfig
+	Env             string `env:"ENV" env-default:"prod"`
+	Port            int    `env:"PORT" env-default:"50055"`
+	AuthServiceAddr string `env:"AUTH_SERVICE_ADDR" env-required:"true"`
+	DB              DBConfig
+	Minio           MinioConfig
 	// Redis           RedisConfig `env:"REDIS"`
 }
 

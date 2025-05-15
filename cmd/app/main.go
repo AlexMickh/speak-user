@@ -25,6 +25,8 @@ func main() {
 	app := app.Register(ctx, cfg)
 	defer app.GracefulStop(ctx)
 
+	app.Run(ctx)
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
