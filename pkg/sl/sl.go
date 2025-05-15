@@ -5,6 +5,10 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 type key string
@@ -80,5 +84,28 @@ func Err(err error) slog.Attr {
 	return slog.Attr{
 		Key:   "error",
 		Value: slog.StringValue(err.Error()),
+	}
+}
+
+func Interceptor(ctx context.Context) grpc.UnaryServerInterceptor {
+	return func(lCtx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		log := GetFromCtx(ctx)
+		lCtx = context.WithValue(lCtx, Key, log)
+
+		md, ok := metadata.FromIncomingContext(lCtx)
+		if ok {
+			guid, ok := md[RequestID]
+			if ok {
+				GetFromCtx(lCtx).Error(ctx, "No request id")
+				ctx = context.WithValue(ctx, RequestID, guid)
+			}
+		}
+
+		GetFromCtx(lCtx).Info(lCtx, "request",
+			slog.String("method", info.FullMethod),
+			slog.Time("request time", time.Now()),
+		)
+
+		return handler(lCtx, req)
 	}
 }

@@ -17,10 +17,10 @@ type DB interface {
 	UpdateUser(
 		ctx context.Context,
 		id uuid.UUID,
-		username string,
-		description string,
-		profileImageUrl string,
-	) error
+		username *string,
+		description *string,
+		profileImageUrl *string,
+	) (models.User, error)
 	DeleteUser(ctx context.Context, id uuid.UUID) (string, error)
 }
 
@@ -63,10 +63,10 @@ func (s *Service) SaveUser(
 	user := models.User{
 		ID:              id,
 		Email:           email,
-		Username:        username,
+		Username:        &username,
 		Password:        password,
-		Description:     description,
-		ProfileImageUrl: profileImageUrl,
+		Description:     &description,
+		ProfileImageUrl: &profileImageUrl,
 		IsEmailVerified: false,
 		CreatedAt:       time.Now().Unix(),
 		UpdatedAt:       time.Now().Unix(),
@@ -94,7 +94,7 @@ func (s *Service) GetUser(ctx context.Context, email string) (models.User, error
 func (s *Service) VerifyEmail(ctx context.Context, id string) error {
 	const op = "service.VerifyEmail"
 
-	uuid, err := uuid.FromBytes([]byte(id))
+	uuid, err := uuid.Parse(id)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -110,35 +110,37 @@ func (s *Service) VerifyEmail(ctx context.Context, id string) error {
 func (s *Service) UpdateUser(
 	ctx context.Context,
 	id string,
-	username string,
-	description string,
+	username *string,
+	description *string,
 	image *models.Image,
-) error {
+) (models.User, error) {
 	const op = "serive.UpdateUser"
 
-	uuid, err := uuid.FromBytes([]byte(id))
+	uuid, err := uuid.Parse(id)
 	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	if image != nil {
 		url, err := s.s3.SaveImage(ctx, image)
 		if err != nil {
-			return fmt.Errorf("%s: %w", op, err)
+			return models.User{}, fmt.Errorf("%s: %w", op, err)
 		}
 
-		err = s.db.UpdateUser(ctx, uuid, username, description, url)
+		user, err := s.db.UpdateUser(ctx, uuid, username, description, &url)
 		if err != nil {
-			return fmt.Errorf("%s: %w", op, err)
+			return models.User{}, fmt.Errorf("%s: %w", op, err)
 		}
+
+		return user, nil
 	}
 
-	err = s.db.UpdateUser(ctx, uuid, username, description, "")
+	user, err := s.db.UpdateUser(ctx, uuid, username, description, nil)
 	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return nil
+	return user, nil
 }
 
 func (s *Service) DeleteUser(ctx context.Context, id string) error {

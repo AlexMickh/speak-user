@@ -98,7 +98,13 @@ func (s *Storage) GetUser(ctx context.Context, email string) (models.User, error
 func (s *Storage) ChangeEmailVerified(ctx context.Context, id uuid.UUID) error {
 	const op = "storage.mongo.ChangeEmailVerified"
 
-	_, err := s.coll.UpdateByID(ctx, id, bson.D{{Key: "is_email_verified", Value: true}})
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "is_email_verified", Value: true},
+		}},
+	}
+
+	_, err := s.coll.UpdateByID(ctx, id, update)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -109,22 +115,37 @@ func (s *Storage) ChangeEmailVerified(ctx context.Context, id uuid.UUID) error {
 func (s *Storage) UpdateUser(
 	ctx context.Context,
 	id uuid.UUID,
-	username string,
-	description string,
-	profileImageUrl string,
-) error {
+	username *string,
+	description *string,
+	profileImageUrl *string,
+) (models.User, error) {
 	const op = "storage.mongo.UpdateUser"
 
-	_, err := s.coll.UpdateByID(ctx, id, bson.D{
-		{Key: "username", Value: username},
-		{Key: "description", Value: description},
-		{Key: "profile_image_url", Value: profileImageUrl},
-	})
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+	data := struct {
+		Username        *string `bson:"username,omitempty" json:"username,omitempty"`
+		Description     *string `bson:"description,omitempty" json:"description,omitempty"`
+		ProfileImageUrl *string `bson:"profile_image_url,omitempty" json:"profile_image_url,omitempty"`
+	}{
+		Username:        username,
+		Description:     description,
+		ProfileImageUrl: profileImageUrl,
+	}
+	update := bson.D{
+		{Key: "$set", Value: data},
 	}
 
-	return nil
+	_, err := s.coll.UpdateByID(ctx, id, update)
+	if err != nil {
+		return models.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	var user models.User
+	err = s.coll.FindOne(ctx, bson.D{{Key: "_id", Value: id}}).Decode(&user)
+	if err != nil {
+		return models.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
 }
 
 func (s *Storage) DeleteUser(ctx context.Context, id uuid.UUID) (string, error) {
@@ -141,5 +162,5 @@ func (s *Storage) DeleteUser(ctx context.Context, id uuid.UUID) (string, error) 
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	return user.ProfileImageUrl, nil
+	return *user.ProfileImageUrl, nil
 }
